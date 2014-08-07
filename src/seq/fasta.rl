@@ -71,12 +71,12 @@ export FASTAParser
 
 type FASTAParser
     state::Ragel.State
-    seqbuf::Vector{Uint8}
+    seqbuf::Ragel.Buffer
 
     function FASTAParser(input::Union(IO, String))
         %% write init;
 
-        return new(Ragel.State(cs, input), Array(Uint8, 0))
+        return new(Ragel.State(cs, input), Ragel.Buffer())
     end
 end
 
@@ -87,9 +87,8 @@ end
 
 
 function accept_state!{S}(input::FASTAParser, output::FASTASeqRecord{S})
-    seqstr = bytestring(input.seqbuf)
+    seqstr = takebuf_string(input.seqbuf)
     output.seq = S(seqstr)
-    empty!(input.seqbuf)
 end
 
 

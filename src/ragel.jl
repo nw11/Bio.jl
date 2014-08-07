@@ -2,10 +2,57 @@
 module Ragel
 
 using Switch
+import Base: push!, takebuf_string
+
+
+# A simple buffer type. This works similarly to IOBuffer, but faster and less
+# featurfull
+
+const INITIAL_BUF_SIZE = 10000
+
+type Buffer
+    data::Vector{Uint8}
+    pos::Int
+    size::Int
+
+    function Buffer()
+        new(Array(Uint8, INITIAL_BUF_SIZE), 1, INITIAL_BUF_SIZE)
+    end
+end
+
+
+function ensureroom!(buf::Buffer, n::Int)
+    if buf.pos + n > buf.size
+        buf.size = 2 * buf.size
+        resize!(buf.data, buf.size)
+    end
+end
+
+
+function push!(buf::Buffer, c::Uint8)
+    ensureroom!(buf, 1)
+    @inbounds buf.data[buf.pos] = c
+    buf.pos += 1
+end
+
+
+function append!(buf::Buffer, source::Vector{Uint8}, start::Int, stop::Int)
+    n = stop - start + 1
+    ensureroom!(buf, n)
+    copy!(buf.data, buf.pos, source, start, n)
+    buf.pos += n
+end
+
+
+function takebuf_string(buf::Buffer)
+    s = bytestring(buf.data[1:buf.pos-1])
+    buf.pos = 1
+    return s
+end
+
 
 # Nuber of bytes to read at a time
 const RAGEL_PARSER_INITIAL_BUF_SIZE = 1000000
-
 
 # A type keeping track of a ragel-based parser's state.
 type State
