@@ -1,6 +1,8 @@
 
 module Ragel
 
+using Switch
+
 # Nuber of bytes to read at a time
 const RAGEL_PARSER_INITIAL_BUF_SIZE = 100000
 
@@ -75,6 +77,13 @@ end
 macro spanfrom(firstpos)
     quote
         $(esc(:state)).buffer[$(esc(firstpos)):$(esc(:p))]
+    end
+end
+
+# return the current character
+macro char()
+    quote
+        $(esc(:state)).buffer[$(esc(:p))+1]
     end
 end
 
@@ -154,6 +163,10 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
 
     quote
         function Base.read!(input::$(esc(input_type)), output::$(esc(output_type)))
+            # TODO: is there a more idiomatic way to do this?
+            local $(esc(:input)) = input
+            local $(esc(:output)) = output
+
             $(state) = ragelstate(input)
             if $(state).finished
                 return false
@@ -177,11 +190,14 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
 
                 $(esc(ragel_body))
 
+                @show $(cs)
+
                 if $(cs) == $(error_state)
                     # TODO: better error messages would be nice. E.g. keeping
                     # track of the line number at the very least.
                     error($("Error parsing $(machine_name)"))
-                elseif $(p) != $(pe) && $(cs) >= $(accept_state)
+                #elseif $(p) != $(pe) && $(cs) >= $(accept_state)
+                else
                     break
                 end
             end
@@ -189,17 +205,13 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
             $(state).pe = $(pe)
             $(state).cs = $(cs)
 
-            if $(cs) == $(start_state)
-                return false
-            elseif $(cs) >= $(accept_state)
-                if $(p) == $(pe)
-                    $(state).finished = true
-                end
-                $(accept_body)
-                return true
-            else
-                error("Premature end of input")
+            # TODO: How do we actually check if anything was read???
+
+            if $(p) == $(pe)
+                $(state).finished = true
             end
+            $(esc(accept_body))
+            return true
         end
     end
 end
