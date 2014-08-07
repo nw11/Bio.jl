@@ -17,10 +17,25 @@ export Nucleotide, DNANucleotide, RNANucleotide,
        AA_K, AA_M, AA_F, AA_P, AA_S, AA_T, AA_W, AA_Y, AA_V, AA_X
 
 
+abstract Sequence
+
+
 include("nucleotide.jl")
 include("kmer.jl")
 include("aminoacid.jl")
-# TODO: pattern (pseudo-sequences with ambiguity codes, etc)
+include("alphabet.jl")
+
+
+# A sequence record is a named sequence, optionally with attached metadat.
+immutable SeqRecord{S, T}
+    name::String
+    seq::S
+    metadata::T
+end
+
+
+# Parsing of various file types
+include("fasta.jl")
 
 end # module Seq
 

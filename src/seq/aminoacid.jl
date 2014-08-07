@@ -102,7 +102,7 @@ end
 #
 # Like NucleotideSequence, amino acid sequences are immutable by convention.
 #
-type AminoAcidSequence
+type AminoAcidSequence <: Sequence
     data::Vector{AminoAcid}
 
     # interval within `data` defining the (sub)sequence

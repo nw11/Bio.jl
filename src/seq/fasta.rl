@@ -71,6 +71,5 @@ Ragel.@generate_read_fuction("fasta", FastaParser, DummyFastaType,
     end,
     begin
     end)
-
 end
 
