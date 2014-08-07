@@ -29,6 +29,7 @@ export FASTAParser
     machine fasta;
 
     action yield {
+        yield = true;
         fbreak;
     }
 
@@ -51,7 +52,7 @@ export FASTAParser
     }
 
     action letter {
-        write(input.seqbuf, Ragel.@char)
+        push!(input.seqbuf, Ragel.@char)
     }
 
     identifier  = (any - space)+ >identifier_start %identifier_end;
@@ -70,12 +71,12 @@ export FASTAParser
 
 type FASTAParser
     state::Ragel.State
-    seqbuf::IOBuffer
+    seqbuf::Vector{Uint8}
 
-    function FASTAParser(filename::String)
+    function FASTAParser(input::Union(IO, String))
         %% write init;
 
-        return new(Ragel.State(cs, filename), IOBuffer())
+        return new(Ragel.State(cs, input), Array(Uint8, 0))
     end
 end
 
@@ -86,8 +87,9 @@ end
 
 
 function accept_state!{S}(input::FASTAParser, output::FASTASeqRecord{S})
-    seqstr = takebuf_string(input.seqbuf)
+    seqstr = bytestring(input.seqbuf)
     output.seq = S(seqstr)
+    empty!(input.seqbuf)
 end
 
 
@@ -96,7 +98,6 @@ Ragel.@generate_read_fuction("fasta", FASTAParser, FASTASeqRecord,
         %% write exec;
     end,
     begin
-        @show p
         accept_state!(input, output)
     end)
 

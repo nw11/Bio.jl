@@ -4,7 +4,7 @@ module Ragel
 using Switch
 
 # Nuber of bytes to read at a time
-const RAGEL_PARSER_INITIAL_BUF_SIZE = 100000
+const RAGEL_PARSER_INITIAL_BUF_SIZE = 1000000
 
 
 # A type keeping track of a ragel-based parser's state.
@@ -176,6 +176,7 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
             $(pe) = $(state).pe
             $(cs) = $(state).cs
             $(data) = $(state).buffer
+            $(esc(:yield)) = false
 
             # run the parser until all input is consumed or a match is found
             while true
@@ -190,14 +191,12 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
 
                 $(esc(ragel_body))
 
-                @show $(cs)
-
                 if $(cs) == $(error_state)
                     # TODO: better error messages would be nice. E.g. keeping
                     # track of the line number at the very least.
                     error($("Error parsing $(machine_name)"))
                 #elseif $(p) != $(pe) && $(cs) >= $(accept_state)
-                else
+                elseif $(esc(:yield))
                     break
                 end
             end
