@@ -2,7 +2,7 @@
 module Ragel
 
 using Switch
-import Base: push!, takebuf_string
+import Base: push!, append!, takebuf_string
 
 
 # A simple buffer type. This works similarly to IOBuffer, but faster and less
@@ -64,7 +64,7 @@ type State
     buffer::Vector{Uint8}
 
     # Indexes into buffer that will be updated and stay valid upon refill.
-    marks::Vector{Uint}
+    marks::Vector{Int}
 
     # True when parsing has completed
     finished::Bool
@@ -80,7 +80,7 @@ type State
 
     function State(cs, input::IO)
         return new(input, Array(Uint8, RAGEL_PARSER_INITIAL_BUF_SIZE),
-                   Uint[], false, 0, 0, cs)
+                   Int[], false, 0, 0, cs)
     end
 
     function State(cs, filename::String, memory_map=true)
@@ -89,7 +89,7 @@ type State
             return new(nothing, data, Uint[], false, 0, length(data), cs)
         else
             return new(input, Array(Uint8, RAGEL_PARSER_INITIAL_BUF_SIZE),
-                       Uint[], false, 0, 0, cs)
+                       Int[], false, 0, 0, cs)
         end
     end
 end

@@ -51,16 +51,21 @@ export FASTAParser
         output.metadata.description = bytestring(Ragel.@spanfrom firstpos)
     }
 
-    action letter {
-        push!(input.seqbuf, Ragel.@char)
+    action letters_start {
+        Ragel.@pushmark!
+    }
+
+    action letters_end {
+        firstpos = Ragel.@popmark!
+        append!(input.seqbuf, state.buffer, firstpos, p)
     }
 
     identifier  = (any - space)+ >identifier_start %identifier_end;
     description = [^\r\n]+       >description_start %description_end;
     newline     = [\n\r];
-    letter      = (alpha >letter) space*;
-    sequence    = letter*;
-    fasta_entry = '>' identifier ( [ \t\v]+ description )? newline space* sequence;
+    letters     = alpha+         >letters_start %letters_end;
+    sequence    = (letters space+)*;
+    fasta_entry = '>' identifier ( [ \t\v]+ description )? newline space* sequence space*;
 
     main := space* (fasta_entry %yield)*;
 }%%
