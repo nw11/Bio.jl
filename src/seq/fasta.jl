@@ -31,11 +31,11 @@ type FASTAParser
     state::Ragel.State
     seqbuf::Ragel.Buffer
 
-    function FASTAParser(input::Union(IO, String))
+    function FASTAParser(input::Union(IO, String, Vector{Uint8}))
         begin
 cs = fasta_start;
 	end
-return new(Ragel.State(cs, input), Ragel.Buffer())
+return new(Ragel.State(cs, input), Ragel.Buffer{Uint8}())
     end
 end
 

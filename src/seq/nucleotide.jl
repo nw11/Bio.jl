@@ -193,19 +193,24 @@ type NucleotideSequence{T <: Nucleotide}
 
         j = startpos
         idx = 1
-        for i in 1:length(data)
-            shift = 0
-            while shift < 64 && j <= stoppos
-                @inbounds c = seq[j]
-                j += 1
-                nt = convert(T, c)
-                if nt == nnucleotide(T)
-                    @inbounds ns[idx] = true
-                else
-                    @inbounds data[i] |= convert(Uint64, nt) << shift
+        @inbounds begin
+            for i in 1:length(data)
+                shift = 0
+                while shift < 64 && j <= stoppos
+                    c = seq[j]
+                    j += 1
+                    nt = convert(T, c)
+                    if nt == nnucleotide(T)
+                        # manually inlined: ns[i] = true
+                        d = (idx - 1) >>> 6
+                        r = (idx - 1) & 63
+                        @inbounds ns.chunks[d + 1] |= uint64(1) << r
+                    else
+                        data[i] |= convert(Uint64, nt) << shift
+                    end
+                    idx += 1
+                    shift += 2
                 end
-                idx += 1
-                shift += 2
             end
         end
 

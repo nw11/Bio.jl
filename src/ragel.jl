@@ -2,21 +2,21 @@
 module Ragel
 
 using Switch
-import Base: push!, append!, empty!, takebuf_string
+import Base: push!, pop!, append!, empty!
 
 
-# A simple buffer type. This works similarly to IOBuffer, but faster and less
-# featurfull
+# A simple buffer type, similar to IOBuffer but faster and with fewer features.
+# It's essentially just a vector that can grow but is never allowed to
+# reallocate to smaller size.
 
 const INITIAL_BUF_SIZE = 10000
 
-type Buffer
-    data::Vector{Uint8}
+type Buffer{T}
+    data::Vector{T}
     pos::Int
-    size::Int
 
-    function Buffer()
-        new(Array(Uint8, INITIAL_BUF_SIZE), 1, INITIAL_BUF_SIZE)
+    function Buffer(initial_size=10000)
+        new(Array(T, initial_size), 1)
     end
 end
 
@@ -27,32 +27,34 @@ end
 
 
 function ensureroom!(buf::Buffer, n::Int)
-    if buf.pos + n > buf.size
-        buf.size = 2 * buf.size
-        resize!(buf.data, buf.size)
+    if buf.pos + n > length(buf.data)
+        resize!(buf.data, 2 * length(buf.data))
     end
 end
 
 
-function push!(buf::Buffer, c::Uint8)
+function push!{T}(buf::Buffer{T}, c::T)
     ensureroom!(buf, 1)
     @inbounds buf.data[buf.pos] = c
     buf.pos += 1
 end
 
 
-function append!(buf::Buffer, source::Vector{Uint8}, start::Int, stop::Int)
+function pop!(buf::Buffer)
+    if buf.pos == 1
+        error(BoundsError())
+    end
+    @inbounds c = buf.data[buf.pos - 1]
+    buf.pos -= 1
+    return c
+end
+
+
+function append!{T}(buf::Buffer{T}, source::Vector{T}, start::Int, stop::Int)
     n = stop - start + 1
     ensureroom!(buf, n)
     copy!(buf.data, buf.pos, source, start, n)
     buf.pos += n
-end
-
-
-function takebuf_string(buf::Buffer)
-    s = bytestring(buf.data[1:buf.pos-1])
-    buf.pos = 1
-    return s
 end
 
 
@@ -69,7 +71,7 @@ type State
     buffer::Vector{Uint8}
 
     # Indexes into buffer that will be updated and stay valid upon refill.
-    marks::Vector{Int}
+    marks::Buffer{Int}
 
     # True when parsing has completed
     finished::Bool
@@ -80,21 +82,21 @@ type State
     cs::Int # current DFA stae
 
     function State(cs, data::Vector{Uint8})
-        return new(nothing, data, Uint[], false, 0, length(data), cs)
+        return new(nothing, data, Buffer{Int}(16), false, 0, length(data), cs)
     end
 
     function State(cs, input::IO)
         return new(input, Array(Uint8, RAGEL_PARSER_INITIAL_BUF_SIZE),
-                   Int[], false, 0, 0, cs)
+                   Buffer{Int}(16), false, 0, 0, cs)
     end
 
     function State(cs, filename::String, memory_map=true)
         if memory_map
             data = mmap_array(Uint8, (filesize(filename),), open(filename))
-            return new(nothing, data, Uint[], false, 0, length(data), cs)
+            return new(nothing, data, Buffer{Int}(16), false, 0, length(data), cs)
         else
             return new(input, Array(Uint8, RAGEL_PARSER_INITIAL_BUF_SIZE),
-                       Int[], false, 0, 0, cs)
+                       Buffer{Int}(16), false, 0, 0, cs)
         end
     end
 end
@@ -247,7 +249,6 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
                     # TODO: better error messages would be nice. E.g. keeping
                     # track of the line number at the very least.
                     error($("Error parsing $(machine_name)"))
-                #elseif $(p) != $(pe) && $(cs) >= $(accept_state)
                 elseif $(esc(:yield))
                     break
                 end
@@ -255,8 +256,6 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
             $(state).p = $(p)
             $(state).pe = $(pe)
             $(state).cs = $(cs)
-
-            # TODO: How do we actually check if anything was read???
 
             if $(p) == $(pe)
                 $(state).finished = true
