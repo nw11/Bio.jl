@@ -2,7 +2,7 @@
 module Ragel
 
 using Switch
-import Base: push!, append!, takebuf_string
+import Base: push!, append!, empty!, takebuf_string
 
 
 # A simple buffer type. This works similarly to IOBuffer, but faster and less
@@ -18,6 +18,11 @@ type Buffer
     function Buffer()
         new(Array(Uint8, INITIAL_BUF_SIZE), 1, INITIAL_BUF_SIZE)
     end
+end
+
+
+function empty!(buf::Buffer)
+    buf.pos = 1
 end
 
 

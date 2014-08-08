@@ -92,8 +92,8 @@ end
 
 
 function accept_state!{S}(input::FASTAParser, output::FASTASeqRecord{S})
-    seqstr = takebuf_string(input.seqbuf)
-    output.seq = S(seqstr)
+    output.seq = S(input.seqbuf.data, 1, input.seqbuf.pos - 1)
+    empty!(input.seqbuf)
 end
 
 

@@ -181,23 +181,28 @@ type NucleotideSequence{T <: Nucleotide}
     end
 
     # Construct a sequence from a string
-    function NucleotideSequence(seq::String)
-        len = seq_data_len(length(seq))
+    function NucleotideSequence(seq::Union(String, Vector{Uint8}))
+        return NucleotideSequence{T}(seq, 1, length(seq))
+    end
+
+    function NucleotideSequence(seq::Union(String, Vector{Uint8}), startpos::Int, stoppos::Int)
+        len = seq_data_len(stoppos - startpos + 1)
         data = zeros(Uint64, len)
-        ns = BitArray(length(seq))
+        ns = BitArray(stoppos - startpos + 1)
         fill!(ns, false)
 
-        j = start(seq)
+        j = startpos
         idx = 1
-        @inbounds for i in 1:length(data)
+        for i in 1:length(data)
             shift = 0
-            while shift < 64 && !done(seq, j)
-                c, j = next(seq, j)
+            while shift < 64 && j <= stoppos
+                @inbounds c = seq[j]
+                j += 1
                 nt = convert(T, c)
                 if nt == nnucleotide(T)
-                    ns[idx] = true
+                    @inbounds ns[idx] = true
                 else
-                    data[i] |= convert(Uint64, nt) << shift
+                    @inbounds data[i] |= convert(Uint64, nt) << shift
                 end
                 idx += 1
                 shift += 2
