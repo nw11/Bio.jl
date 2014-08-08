@@ -99,7 +99,9 @@ end
 
 Ragel.@generate_read_fuction("fasta", FASTAParser, FASTASeqRecord,
     begin
-        %% write exec;
+        @inbounds begin
+            %% write exec;
+        end
     end,
     begin
         accept_state!(input, output)

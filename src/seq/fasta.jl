@@ -53,7 +53,8 @@ end
 
 Ragel.@generate_read_fuction("fasta", FASTAParser, FASTASeqRecord,
     begin
-        begin
+        @inbounds begin
+            begin
 if p == pe 
 	@goto _test_eof
 
@@ -547,7 +548,8 @@ end
 begin
 end
 end
-end,
+end
+    end,
     begin
         accept_state!(input, output)
     end)

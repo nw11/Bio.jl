@@ -204,7 +204,7 @@ type NucleotideSequence{T <: Nucleotide}
                         # manually inlined: ns[i] = true
                         d = (idx - 1) >>> 6
                         r = (idx - 1) & 63
-                        @inbounds ns.chunks[d + 1] |= uint64(1) << r
+                        ns.chunks[d + 1] |= uint64(1) << r
                     else
                         data[i] |= convert(Uint64, nt) << shift
                     end
@@ -214,7 +214,7 @@ type NucleotideSequence{T <: Nucleotide}
             end
         end
 
-        return new(data, ns, 1:length(seq))
+        return new(data, ns, 1:(stoppos - startpos + 1))
     end
 end
 

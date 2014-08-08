@@ -2,14 +2,14 @@
 module Ragel
 
 using Switch
-import Base: push!, pop!, append!, empty!
+import Base: push!, pop!, append!, empty!, isempty, length, getindex, setindex!
 
 
 # A simple buffer type, similar to IOBuffer but faster and with fewer features.
 # It's essentially just a vector that can grow but is never allowed to
 # reallocate to smaller size.
 
-const INITIAL_BUF_SIZE = 10000
+const INITIAL_BUF_SIZE = 1000000
 
 type Buffer{T}
     data::Vector{T}
@@ -21,8 +21,35 @@ type Buffer{T}
 end
 
 
+function isempty(buf::Buffer)
+    return buf.pos == 1
+end
+
+
+function length(buf::Buffer)
+    return buf.pos - 1
+end
+
+
 function empty!(buf::Buffer)
     buf.pos = 1
+end
+
+
+function getindex(buf::Buffer, i::Integer)
+    if !(1 <= i < buf.pos)
+        error(BoundsError())
+    end
+    @inbounds x = buf.data[i]
+    return x
+end
+
+
+function setindex!{T}(buf::Buffer{T}, value::T, i::Integer)
+    if !(1 <= i < buf.pos)
+        error(BoundsError())
+    end
+    @inbounds buf.data[i] = value
 end
 
 
@@ -53,7 +80,7 @@ end
 function append!{T}(buf::Buffer{T}, source::Vector{T}, start::Int, stop::Int)
     n = stop - start + 1
     ensureroom!(buf, n)
-    copy!(buf.data, buf.pos, source, start, n)
+    unsafe_copy!(buf.data, buf.pos, source, start, n)
     buf.pos += n
 end
 
@@ -90,12 +117,12 @@ type State
                    Buffer{Int}(16), false, 0, 0, cs)
     end
 
-    function State(cs, filename::String, memory_map=true)
+    function State(cs, filename::String, memory_map=false)
         if memory_map
             data = mmap_array(Uint8, (filesize(filename),), open(filename))
             return new(nothing, data, Buffer{Int}(16), false, 0, length(data), cs)
         else
-            return new(input, Array(Uint8, RAGEL_PARSER_INITIAL_BUF_SIZE),
+            return new(open(filename), Array(Uint8, RAGEL_PARSER_INITIAL_BUF_SIZE),
                        Buffer{Int}(16), false, 0, 0, cs)
         end
     end
@@ -169,8 +196,8 @@ function fillbuffer!(parser::State)
     buflen = length(parser.buffer)
     keeplen = 0
     first_mark = 0
-    if !isempty(parser.marks) > 0
-        first_mark = parser.marsk[1]
+    if !isempty(parser.marks)
+        first_mark = parser.marks[1]
         keeplen = parser.pe - first_mark + 1
         if keeplen == buflen
             buflen = 2 * buflen
@@ -179,19 +206,32 @@ function fillbuffer!(parser::State)
         copy!(parser.buffer, 1, parser.buffer, first_mark, keeplen)
     end
 
-    i = keeplen
-    while i < buflen && !eof(parser.input)
-        i += 1
-        parser.buffer[i] = read(parser.input, Uint8)
-    end
+    nb = readchunk!(parser.input, parser.buffer, keeplen + 1, buflen)
 
     parser.p = 0
-    parser.pe = i
+    parser.pe = keeplen + nb
     for i in 1:length(parser.marks)
         parser.marks[i] -= first_mark - 1
     end
 
-    return i - keeplen
+    return nb
+end
+
+
+function readchunk!(source::IO, dest::Vector{Uint8}, dest_start::Int, dest_stop::Int)
+    i = dest_start
+    while i <= dest_stop && !eof(source)
+        @inbounds dest[i] = read(source, Uint8)
+        i += 1
+    end
+    return i - dest_start
+end
+
+
+function readchunk!(source::IOStream, dest::Vector{Uint8}, dest_start::Int, dest_stop::Int)
+    len = dest_stop - dest_start  + 1
+    return ccall(:ios_readall, Uint, (Ptr{Void}, Ptr{Void}, Uint), source.ios, 
+                 pointer(dest, dest_start), len)
 end
 
 
