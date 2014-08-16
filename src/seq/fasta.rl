@@ -5,6 +5,10 @@
 type FASTAMetadata
     description::String
 
+    function FASTAMetadata(description)
+        return new(description)
+    end
+
     function FASTAMetadata()
         return new("")
     end
@@ -39,7 +43,7 @@ export FASTAParser
 
     action identifier_end {
         firstpos = Ragel.@popmark!
-        output.name = bytestring(Ragel.@spanfrom firstpos)
+        input.namebuf = bytestring(Ragel.@spanfrom firstpos)
     }
 
     action description_start {
@@ -48,7 +52,7 @@ export FASTAParser
 
     action description_end {
         firstpos = Ragel.@popmark!
-        output.metadata.description = bytestring(Ragel.@spanfrom firstpos)
+        input.descbuf = bytestring(Ragel.@spanfrom firstpos)
     }
 
     action letters_start {
@@ -77,11 +81,13 @@ export FASTAParser
 type FASTAParser
     state::Ragel.State
     seqbuf::Ragel.Buffer
+    namebuf::String
+    descbuf::String
 
     function FASTAParser(input::Union(IO, String, Vector{Uint8}))
         %% write init;
 
-        return new(Ragel.State(cs, input), Ragel.Buffer{Uint8}())
+        return new(Ragel.State(cs, input), Ragel.Buffer{Uint8}(), "", "")
     end
 end
 
@@ -92,7 +98,12 @@ end
 
 
 function accept_state!{S}(input::FASTAParser, output::FASTASeqRecord{S})
+    output.name = input.namebuf
+    output.metadata.description = input.descbuf
     output.seq = S(input.seqbuf.data, 1, input.seqbuf.pos - 1)
+
+    input.namebuf = ""
+    input.descbuf = ""
     empty!(input.seqbuf)
 end
 
@@ -111,5 +122,54 @@ end # module FASTAParserImpl
 
 
 using Bio.Seq.FASTAParserImpl
+
+
+type FASTAIterator
+    parser::FASTAParser
+
+    # A type or function used to construct output sequence types
+    default_alphabet::Alphabet
+    isdone::Bool
+    nextitem
+end
+
+
+function Base.read(input::IO, ::Type{FASTA}, alphabet::Alphabet=DNA_ALPHABET)
+    return FASTAIterator(FASTAParser(input), alphabet, false, nothing)
+end
+
+
+function advance!(it::FASTAIterator)
+    it.isdone = !FASTAParserImpl.advance!(it.parser)
+    if !it.isdone
+        alphabet = infer_alphabet(it.parser.seqbuf.data, 1, it.parser.seqbuf.pos - 1,
+                                  it.default_alphabet)
+        S = alphabet_type[alphabet]
+        it.default_alphabet = alphabet
+        it.nextitem =
+            FASTASeqRecord{S}(it.parser.namebuf,
+                              S(it.parser.seqbuf.data, 1, it.parser.seqbuf.pos - 1),
+                              FASTAMetadata(it.parser.descbuf))
+        empty!(it.parser.seqbuf)
+    end
+end
+
+
+function start(it::FASTAIterator)
+    advance!(it)
+    return nothing
+end
+
+
+function next(it::FASTAIterator, state)
+    item = it.nextitem
+    advance!(it)
+    return item, nothing
+end
+
+
+function done(it::FASTAIterator, state)
+    return it.isdone
+end
 
 

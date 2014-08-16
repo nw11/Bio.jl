@@ -2,10 +2,35 @@
 
 # Assign flags for sequence types so we can maintain a set of compatible
 # alphabets in an integer.
-const EMPTY_ALPHABET = uint16(0)
-const DNA_ALPHABET   = uint16(0b0001)
-const RNA_ALPHABET   = uint16(0b0010)
-const AA_ALPHABET    = uint16(0b0100)
+
+bitstype 16 Alphabet
+
+function Base.convert(::Type{Alphabet}, nt::Uint16)
+    return box(Alphabet, unbox(Uint16, nt))
+end
+
+
+function Base.convert(::Type{Uint16}, nt::Alphabet)
+    return box(Uint16, unbox(Alphabet, nt))
+end
+
+
+function Base.|(a::Alphabet, b::Alphabet)
+    return convert(Alphabet, convert(Uint16, a) | convert(Uint16, b))
+end
+
+
+function Base.&(a::Alphabet, b::Alphabet)
+    return convert(Alphabet, convert(Uint16, a) & convert(Uint16, b))
+end
+
+
+
+
+const EMPTY_ALPHABET = convert(Alphabet, uint16(0))
+const DNA_ALPHABET   = convert(Alphabet, uint16(0b0001))
+const RNA_ALPHABET   = convert(Alphabet, uint16(0b0010))
+const AA_ALPHABET    = convert(Alphabet, uint16(0b0100))
 
 const ALL_ALPHABETS =
     DNA_ALPHABET | RNA_ALPHABET | AA_ALPHABET
@@ -73,13 +98,18 @@ const compatible_alphabets = [
 #
 # Args:
 #   data: sequence data in a string
+#   start: first position to consider in data
+#   stop: last position to consider in data
+#   default: if there are multiple compatible alphabets, default
+#             to this one if it's compatible.
 #
 # Returns:
 #   A type T to which the string data can be converted.
 #
-function infer_sequence_type(data::String)
+function infer_alphabet(data::Vector{Uint8}, start, stop, default)
     alphabets = ALL_ALPHABETS
-    for c in data
+    for i in start:stop
+        c = data[i]
         if 'A' <= c <= 'z'
             alphabets &= compatible_alphabets[c - 'A' + 1]
         else
@@ -87,12 +117,14 @@ function infer_sequence_type(data::String)
         end
     end
 
-    if count_ones(alphabets) == 0
+    if count_ones(convert(Uint16, alphabets)) == 0
         error("String is not compatible with any known sequence type.")
+    elseif alphabets & default != 0
+        return default
     else
         for alphabet in preferred_sequence_alphabets
             if alphabet & alphabets != 0
-                return alphabet_type[alphabet]
+                return alphabet
             end
         end
     end

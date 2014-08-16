@@ -256,10 +256,9 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
     state = esc(:state)
 
     quote
-        function Base.read!(input::$(esc(input_type)), output::$(esc(output_type)))
+        function $(esc(:advance!))(input::$(esc(input_type)))
             # TODO: is there a more idiomatic way to do this?
             local $(esc(:input)) = input
-            local $(esc(:output)) = output
 
             $(state) = ragelstate(input)
             if $(state).finished
@@ -300,8 +299,18 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
             if $(p) == $(pe)
                 $(state).finished = true
             end
-            $(esc(accept_body))
             return true
+        end
+
+        function Base.read!(input::$(esc(input_type)), output::$(esc(output_type)))
+            local $(esc(:input)) = input
+            local $(esc(:output)) = output
+            if advance!(input)
+                $(esc(accept_body))
+                return true
+            else
+                return false
+            end
         end
     end
 end

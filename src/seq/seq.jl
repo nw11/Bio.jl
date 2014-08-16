@@ -5,7 +5,7 @@ module Seq
 using Base.Intrinsics
 
 import Base: convert, getindex, show, length, start, next, done, copy, reverse,
-             show, endof, ==
+             show, endof, ==, read, read!
 
 export Nucleotide, DNANucleotide, RNANucleotide,
        DNA_A, DNA_C, DNA_G, DNA_T, DNA_N,
@@ -16,7 +16,11 @@ export Nucleotide, DNANucleotide, RNANucleotide,
        kmer, AminoAcid, AminoAcidSequence, @aa_str, translate, ncbi_trans_table,
        AA_A, AA_R, AA_N, AA_D, AA_C, AA_Q, AA_E, AA_G, AA_H, AA_I, AA_L,
        AA_K, AA_M, AA_F, AA_P, AA_S, AA_T, AA_W, AA_Y, AA_V, AA_X,
-       FASTAParser
+       FASTA
+
+
+abstract FileFormat
+immutable FASTA <: FileFormat end
 
 
 abstract Sequence
@@ -33,6 +37,10 @@ type SeqRecord{S, T}
     name::String
     seq::S
     metadata::T
+
+    function SeqRecord(name, seq::S, metadata::T)
+        return new(name, seq, metadata)
+    end
 
     function SeqRecord()
         return new("", S(), T())
