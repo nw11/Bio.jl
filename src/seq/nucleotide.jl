@@ -120,7 +120,7 @@ end
 
 
 function show(io::IO, nt::DNANucleotide)
-    if aa == DNA_INVALID
+    if nt == DNA_INVALID
         write(io, "(Invalid DNA Nucleotide)")
     else
         write(io, convert(Char, nt))
@@ -129,7 +129,7 @@ end
 
 
 function show(io::IO, nt::RNANucleotide)
-    if aa == RNA_INVALID
+    if nt == RNA_INVALID
         write(io, "(Invalid RNA Nucleotide)")
     else
         write(io, convert(Char, nt))
@@ -199,7 +199,7 @@ type NucleotideSequence{T <: Nucleotide}
                 while shift < 64 && j <= stoppos
                     c = seq[j]
                     j += 1
-                    nt = convert(T, c)
+                    nt = convert(T, convert(Char, c))
                     if nt == nnucleotide(T)
                         # manually inlined: ns[i] = true
                         d = (idx - 1) >>> 6
@@ -331,6 +331,21 @@ function getindex{T}(seq::NucleotideSequence{T}, r::UnitRange)
     return NucleotideSequence{T}(seq, r)
 end
 
+
+# Unsafe sequence mutation.
+#
+# This is unsafe in the sense that sequence may share the same data,
+function unsafe_setindex!{T}(seq::NucleotideSequence{T}, nt::T, i::Integer)
+    if nt == nnucleotide(T)
+        seq.ns[i] = true
+    else
+        seq.ns[i] = false
+        d, r = divrem(i - 1, 32)
+        seq.data[d + 1] =
+            (seq.data[d + 1] & ((~uint64(0b11)) << (2*r))) | (convert(Uint64, nt) << (2*r))
+    end
+    return seq
+end
 
 
 # Replace a NucleotideSequence's data with a copy, copying only what's needed.

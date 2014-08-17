@@ -48,11 +48,16 @@ type SeqRecord{S, T}
 end
 
 
-# TODO: functions over SeqRecord
-#   - show
-#   - getindex(seqrec, i)
-#   - getindex(seqrec, i:j)
-#   - reverse, complement, reverse_complement, nucleotide_count, ...
+# Degelgate sequence operations
+function Base.getindex(seqrec::SeqRecord, i::Integer)
+    return SeqRecord(seqreq.name, seqrec.seq[i], seqreq.metadata)
+end
+
+
+function Base.getindex(seqrec::SeqRecord, r::UnitRange)
+    return SeqRecord(seqrec.name, seqrec.seq[r], seqrec.metadata)
+end
+
 
 typealias DNASeqRecord{T}       SeqRecord{DNASequence, T}
 typealias RNASeqRecord{T}       SeqRecord{RNASequence, T}

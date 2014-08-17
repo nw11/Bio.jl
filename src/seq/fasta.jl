@@ -19,6 +19,12 @@ typealias FASTARNASeqRecord       RNASeqRecord{FASTAMetadata}
 typealias FASTAAminoAcidSeqRecord AminoAcidSeqRecord{FASTAMetadata}
 
 
+function Base.show(io::IO, seqrec::FASTASeqRecord)
+    write(io, ">", seqrec.name, " ", seqrec.metadata.description, "\n")
+    show(io, seqrec.seq)
+end
+
+
 module FASTAParserImpl
 
 import Bio.Seq: FASTASeqRecord
