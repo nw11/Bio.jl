@@ -3,6 +3,7 @@ module TestSeq
 using FactCheck
 using Bio
 using Bio.Seq
+using YAML
 
 # Return a random DNA/RNA sequence of the given length
 function random_seq(n::Integer, nts, probs)
@@ -584,6 +585,24 @@ facts("Iteration") do
         @fact isempty(collect(eachkmer(dna"ACGT", 0))) => true
         @fact_throws eachkmer(dna"ACGT", -1)
         @fact_throws eachkmer(dna"ACGT", 33)
+    end
+end
+
+facts("FASTA Parsing") do
+    function check_fasta_parse(filename)
+        for seqrec in read(open(filename), FASTA)
+        end
+        return true
+    end
+
+    path = Pkg.dir("Bio", "test", "BioFmtSpecimens", "FASTA")
+    for specimen in YAML.load_file(joinpath(path, "index.yml"))
+        tags = specimen["tags"]
+        # currentsly unsupported features
+        if contains(tags, "gaps") || contains(tags, "comments") || contains(tags, "ambiguity")
+            continue
+        end
+        @fact check_fasta_parse(joinpath(path, specimen["filename"])) => true
     end
 end
 
