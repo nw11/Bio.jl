@@ -123,12 +123,17 @@ type AminoAcidSequence <: Sequence
         return new(other.data, part)
     end
 
-    # Construct of a subsequence from another amino acid sequence
-    function AminoAcidSequence(seq::String)
+    # Construct of a subsequence from a string
+    function AminoAcidSequence(seq::Union(String, Vector{Uint8}))
+        return AminoAcidSequence(seq, 1, length(seq))
+    end
+
+    function AminoAcidSequence(seq::Union(String, Vector{Uint8}),
+                               startpos::Int, endpos::Int)
         len = length(seq)
         data = Array(AminoAcid, len)
-        for (i, c) in enumerate(seq)
-            data[i] = convert(AminoAcid, c)
+        for (i, j) in enumerate(startpos:endpos)
+            data[i] = convert(AminoAcid, seq[j])
         end
 
         return new(data, 1:len)
