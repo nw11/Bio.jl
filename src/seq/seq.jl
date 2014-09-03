@@ -16,11 +16,12 @@ export Nucleotide, DNANucleotide, RNANucleotide,
        kmer, AminoAcid, AminoAcidSequence, @aa_str, translate, ncbi_trans_table,
        AA_A, AA_R, AA_N, AA_D, AA_C, AA_Q, AA_E, AA_G, AA_H, AA_I, AA_L,
        AA_K, AA_M, AA_F, AA_P, AA_S, AA_T, AA_W, AA_Y, AA_V, AA_X,
-       FASTA
+       FASTA, FASTQ
 
 
 abstract FileFormat
 immutable FASTA <: FileFormat end
+immutable FASTQ <: FileFormat end
 
 
 abstract Sequence
@@ -30,6 +31,7 @@ include("nucleotide.jl")
 include("kmer.jl")
 include("aminoacid.jl")
 include("alphabet.jl")
+include("quality.jl")
 
 
 # A sequence record is a named sequence with attached metadata.
@@ -66,6 +68,7 @@ typealias AminoAcidSeqRecord{T} SeqRecord{RNASequence, T}
 
 # Parsing of various file types
 include("fasta.jl")
+include("fastq.jl")
 
 
 end # module Seq
