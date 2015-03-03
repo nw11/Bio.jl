@@ -36,14 +36,13 @@ const ALL_QUAL_ENCODINGS =
 
 
 # Ranges and score of the first character in the range.
-const qual_encoding_ranges = [
+const qual_encoding_ranges = @compat Dict{QualityEncoding, (typeof('a':'a'), Int8)}(
     SANGER_QUAL_ENCODING     => ('!':'I', int8(0)),
     SOLEXA_QUAL_ENCODING     => (';':'h', int8(-5)),
     ILLUMINA13_QUAL_ENCODING => ('@':'h', int8(0)),
     ILLUMINA15_QUAL_ENCODING => ('B':'h', int8(3)),
     ILLUMINA18_QUAL_ENCODING => ('!':'J', int8(0)),
-
-]
+)
 
 # Build an encoding lookup table
 const compatible_qual_encoding = fill(EMPTY_QUAL_ENCODING, length('!':'h'))

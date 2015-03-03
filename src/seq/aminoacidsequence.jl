@@ -29,15 +29,21 @@ function AminoAcidSequence(other::AminoAcidSequence, part::UnitRange)
     return AminoAcidSequence(other.data, part)
 end
 
-# Construct of a subsequence from another amino acid sequence
-function AminoAcidSequence(seq::String)
+
+function AminoAcidSequence(seq::Union(String, Vector{Uint8}),
+                           startpos::Int, endpos::Int)
     len = length(seq)
     data = Array(AminoAcid, len)
-    for (i, c) in enumerate(seq)
-        data[i] = convert(AminoAcid, c)
+    for (i, j) in enumerate(startpos:endpos)
+        data[i] = convert(AminoAcid, seq[j])
     end
 
     return AminoAcidSequence(data, 1:len)
+end
+
+
+function AminoAcidSequence(seq::String)
+    return AminoAcidSequence(seq, 1, length(seq))
 end
 
 

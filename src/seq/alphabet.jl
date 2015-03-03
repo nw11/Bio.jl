@@ -25,8 +25,6 @@ function Base.&(a::Alphabet, b::Alphabet)
 end
 
 
-
-
 const EMPTY_ALPHABET = convert(Alphabet, uint16(0))
 const DNA_ALPHABET   = convert(Alphabet, uint16(0b0001))
 const RNA_ALPHABET   = convert(Alphabet, uint16(0b0010))
@@ -36,11 +34,11 @@ const ALL_ALPHABETS =
     DNA_ALPHABET | RNA_ALPHABET | AA_ALPHABET
 
 
-const alphabet_type = [
+const alphabet_type = @compat Dict{Alphabet, Type}(
     DNA_ALPHABET => DNASequence,
     RNA_ALPHABET => RNASequence,
     AA_ALPHABET  => AminoAcidSequence
-]
+)
 
 
 # When a sequence has multiple compatible alphabets, we choose the first
@@ -110,8 +108,8 @@ function infer_alphabet(data::Vector{Uint8}, start, stop, default)
     alphabets = ALL_ALPHABETS
     for i in start:stop
         c = data[i]
-        if 'A' <= c <= 'z'
-            alphabets &= compatible_alphabets[c - 'A' + 1]
+        if uint8('A') <= c <= uint8('z')
+            alphabets &= compatible_alphabets[c - uint8('A') + 1]
         else
             error("Character $(c) is not compatible with any sequence type.")
         end
