@@ -36,28 +36,31 @@ const ALL_QUAL_ENCODINGS =
 
 
 # Ranges and score of the first character in the range.
-const qual_encoding_ranges = @compat Dict{QualityEncoding, (typeof('a':'a'), Int8)}(
-    SANGER_QUAL_ENCODING     => ('!':'I', int8(0)),
-    SOLEXA_QUAL_ENCODING     => (';':'h', int8(-5)),
-    ILLUMINA13_QUAL_ENCODING => ('@':'h', int8(0)),
-    ILLUMINA15_QUAL_ENCODING => ('B':'h', int8(3)),
-    ILLUMINA18_QUAL_ENCODING => ('!':'J', int8(0)),
+const qual_encoding_ranges = @compat Dict{QualityEncoding, (typeof(uint8(0):uint8(0)), Int8)}(
+    SANGER_QUAL_ENCODING     => (uint8('!'):uint8('~'), int8(0)),
+    SOLEXA_QUAL_ENCODING     => (uint8(';'):uint8('~'), int8(-5)),
+    ILLUMINA13_QUAL_ENCODING => (uint8('@'):uint8('~'), int8(0)),
+    ILLUMINA15_QUAL_ENCODING => (uint8('B'):uint8('~'), int8(3)),
+    ILLUMINA18_QUAL_ENCODING => (uint8('!'):uint8('~'), int8(0)),
 )
 
 # Build an encoding lookup table
-const compatible_qual_encoding = fill(EMPTY_QUAL_ENCODING, length('!':'h'))
+const compatible_qual_encoding = fill(EMPTY_QUAL_ENCODING, length('!':'~'))
 
 for (encoding, (range, start_score)) in qual_encoding_ranges
     for c in range
-        compatible_qual_encoding[c - '!' + 1] |= encoding
+        compatible_qual_encoding[c - uint8('!') + 1] |= encoding
     end
 end
 
 # When a quality string has multiple compatible encodings, we choose the first
 # compatible alphabet in this list.
 const preferred_quality_encodings = [
-    ILLUMINA18_QUAL_ENCODING, SANGER_QUAL_ENCODING,
-    ILLUMINA15_QUAL_ENCODING, ILLUMINA13_QUAL_ENCODING, SOLEXA_QUAL_ENCODING
+    ILLUMINA15_QUAL_ENCODING,
+    ILLUMINA13_QUAL_ENCODING,
+    SOLEXA_QUAL_ENCODING,
+    SANGER_QUAL_ENCODING,
+    ILLUMINA18_QUAL_ENCODING,
 ]
 
 # Infer the encoding of a FASTQ quality string.
@@ -76,16 +79,16 @@ function infer_quality_encoding(data::Vector{Uint8}, start, stop, default)
     encodings = ALL_QUAL_ENCODINGS
     for i in start:stop
         c = data[i]
-        if '!' <= c <= 'h'
-            encodings &= compatible_qual_encoding[c - '!' + 1]
+        if '!' <= c <= '~'
+            encodings &= compatible_qual_encoding[convert(Char, c) - '!' + 1]
         else
-            error("Character $(c) is not compatible with any known quality encoding.")
+            error("Character $(convert(Char, c)) is not compatible with any known quality encoding.")
         end
     end
 
     if count_ones(convert(Uint16, encodings)) == 0
         error("String is not compatible with any known sequence type.")
-    elseif encodings & default != EMPTY_ALPHABET
+    elseif default != EMPTY_QUAL_ENCODING && (encodings & default) != EMPTY_ALPHABET
         return default
     else
         for encoding in preferred_quality_encodings

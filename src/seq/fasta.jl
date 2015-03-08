@@ -33,10 +33,10 @@ using Switch
 export FASTAParser
 
 
-const fasta_start  = convert(Int , 7)
-const fasta_first_final  = convert(Int , 7)
+const fasta_start  = convert(Int , 6)
+const fasta_first_final  = convert(Int , 6)
 const fasta_error  = convert(Int , 0)
-const fasta_en_main  = convert(Int , 7)
+const fasta_en_main  = convert(Int , 6)
 type FASTAParser
     state::Ragel.State
     seqbuf::Ragel.Buffer
@@ -77,8 +77,8 @@ if p == pe
 
 end
 @switch cs  begin
-    @case 7
-@goto st_case_7
+    @case 6
+@goto st_case_6
 @case 0
 @goto st_case_0
 @case 1
@@ -89,26 +89,34 @@ end
 @goto st_case_3
 @case 4
 @goto st_case_4
+@case 7
+@goto st_case_7
 @case 8
 @goto st_case_8
+@case 9
+@goto st_case_9
+@case 10
+@goto st_case_10
+@case 11
+@goto st_case_11
+@case 12
+@goto st_case_12
 @case 5
 @goto st_case_5
-@case 6
-@goto st_case_6
 
 end
 @goto st_out
-@label st7
+@label st6
 p+= 1;
 	if p == pe 
-	@goto _test_eof7
+	@goto _test_eof6
 
 end
-@label st_case_7
+@label st_case_6
 @switch ( data[1 + p ])  begin
     @case 32
 begin
-@goto st7
+@goto st6
 end
 @case 62
 begin
@@ -118,7 +126,7 @@ end
 end
 if 9 <= ( data[1 + p ]) && ( data[1 + p ]) <= 13 
 	begin
-@goto st7
+@goto st6
 end
 
 end
@@ -129,7 +137,23 @@ end
 @label st0
 cs = 0;
 	@goto _out
-@label ctr14
+@label ctr13
+begin
+	yield = true;
+        begin
+	p+= 1; cs = 1; @goto _out
+
+end
+
+    
+end
+@goto st1
+@label ctr19
+begin
+	firstpos = Ragel.@popmark!
+        append!(input.seqbuf, state.buffer, firstpos, p)
+    
+end
 begin
 	yield = true;
         begin
@@ -352,15 +376,74 @@ begin
         input.namebuf = bytestring(Ragel.@spanfrom firstpos)
     
 end
-@goto st8
+@goto st7
 @label ctr8
 begin
 	firstpos = Ragel.@popmark!
         input.descbuf = bytestring(Ragel.@spanfrom firstpos)
     
 end
+@goto st7
+@label st7
+p+= 1;
+	if p == pe 
+	@goto _test_eof7
+
+end
+@label st_case_7
+@switch ( data[1 + p ])  begin
+    @case 9
+begin
+@goto st7
+end
+@case 10
+begin
 @goto st8
-@label ctr9
+end
+@case 13
+begin
+@goto st8
+end
+@case 32
+begin
+@goto st7
+end
+@case 62
+begin
+@goto ctr13
+end
+
+end
+if ( data[1 + p ]) < 65 
+	begin
+if 11 <= ( data[1 + p ]) && ( data[1 + p ]) <= 12 
+	begin
+@goto st7
+end
+
+end
+end
+
+elseif ( ( data[1 + p ]) > 90  )
+	begin
+if 97 <= ( data[1 + p ]) && ( data[1 + p ]) <= 122 
+	begin
+@goto ctr14
+end
+
+end
+end
+
+else
+	begin
+@goto ctr14
+end
+
+end
+begin
+@goto st0
+end
+@label ctr17
 begin
 	firstpos = Ragel.@popmark!
         append!(input.seqbuf, state.buffer, firstpos, p)
@@ -381,7 +464,7 @@ begin
 end
 @case 62
 begin
-@goto ctr14
+@goto ctr13
 end
 
 end
@@ -419,25 +502,106 @@ begin
 	Ragel.@pushmark!
     
 end
-@goto st5
-@label st5
+@goto st9
+@label st9
 p+= 1;
 	if p == pe 
-	@goto _test_eof5
+	@goto _test_eof9
 
 end
-@label st_case_5
-if ( data[1 + p ]) == 32 
+@label st_case_9
+@switch ( data[1 + p ])  begin
+    @case 9
+begin
+@goto ctr16
+end
+@case 10
+begin
+@goto ctr17
+end
+@case 11
+begin
+@goto ctr16
+end
+@case 12
+begin
+@goto ctr18
+end
+@case 13
+begin
+@goto ctr17
+end
+@case 32
+begin
+@goto ctr16
+end
+@case 62
+begin
+@goto ctr19
+end
+
+end
+if ( data[1 + p ]) > 90 
 	begin
-@goto ctr9
+if 97 <= ( data[1 + p ]) && ( data[1 + p ]) <= 122 
+	begin
+@goto st9
+end
+
+end
+end
+
+elseif ( ( data[1 + p ]) >= 65  )
+	begin
+@goto st9
+end
+
+end
+begin
+@goto st0
+end
+@label ctr16
+begin
+	firstpos = Ragel.@popmark!
+        append!(input.seqbuf, state.buffer, firstpos, p)
+    
+end
+@goto st10
+@label st10
+p+= 1;
+	if p == pe 
+	@goto _test_eof10
+
+end
+@label st_case_10
+@switch ( data[1 + p ])  begin
+    @case 9
+begin
+@goto st10
+end
+@case 10
+begin
+@goto st11
+end
+@case 11
+begin
+@goto st10
+end
+@case 32
+begin
+@goto st10
+end
+@case 62
+begin
+@goto ctr13
 end
 
 end
 if ( data[1 + p ]) < 65 
 	begin
-if 9 <= ( data[1 + p ]) && ( data[1 + p ]) <= 13 
+if 12 <= ( data[1 + p ]) && ( data[1 + p ]) <= 13 
 	begin
-@goto ctr9
+@goto st11
 end
 
 end
@@ -447,7 +611,7 @@ elseif ( ( data[1 + p ]) > 90  )
 	begin
 if 97 <= ( data[1 + p ]) && ( data[1 + p ]) <= 122 
 	begin
-@goto st5
+@goto ctr15
 end
 
 end
@@ -455,7 +619,106 @@ end
 
 else
 	begin
-@goto st5
+@goto ctr15
+end
+
+end
+begin
+@goto st0
+end
+@label ctr18
+begin
+	firstpos = Ragel.@popmark!
+        append!(input.seqbuf, state.buffer, firstpos, p)
+    
+end
+@goto st11
+@label st11
+p+= 1;
+	if p == pe 
+	@goto _test_eof11
+
+end
+@label st_case_11
+@switch ( data[1 + p ])  begin
+    @case 32
+begin
+@goto st11
+end
+@case 62
+begin
+@goto ctr13
+end
+
+end
+if 9 <= ( data[1 + p ]) && ( data[1 + p ]) <= 13 
+	begin
+@goto st11
+end
+
+end
+begin
+@goto st0
+end
+@label ctr14
+begin
+	Ragel.@pushmark!
+    
+end
+@goto st12
+@label st12
+p+= 1;
+	if p == pe 
+	@goto _test_eof12
+
+end
+@label st_case_12
+@switch ( data[1 + p ])  begin
+    @case 9
+begin
+@goto ctr18
+end
+@case 10
+begin
+@goto ctr17
+end
+@case 13
+begin
+@goto ctr17
+end
+@case 32
+begin
+@goto ctr18
+end
+@case 62
+begin
+@goto ctr19
+end
+
+end
+if ( data[1 + p ]) < 65 
+	begin
+if 11 <= ( data[1 + p ]) && ( data[1 + p ]) <= 12 
+	begin
+@goto ctr18
+end
+
+end
+end
+
+elseif ( ( data[1 + p ]) > 90  )
+	begin
+if 97 <= ( data[1 + p ]) && ( data[1 + p ]) <= 122 
+	begin
+@goto st12
+end
+
+end
+end
+
+else
+	begin
+@goto st12
 end
 
 end
@@ -467,14 +730,14 @@ begin
 	Ragel.@pushmark!
     
 end
-@goto st6
-@label st6
+@goto st5
+@label st5
 p+= 1;
 	if p == pe 
-	@goto _test_eof6
+	@goto _test_eof5
 
 end
-@label st_case_6
+@label st_case_5
 @switch ( data[1 + p ])  begin
     @case 9
 begin
@@ -522,8 +785,8 @@ begin
 @goto ctr5
 end
 @label st_out
-@label _test_eof7
-cs = 7; @goto _test_eof
+@label _test_eof6
+cs = 6; @goto _test_eof
 @label _test_eof1
 cs = 1; @goto _test_eof
 @label _test_eof2
@@ -532,19 +795,48 @@ cs = 2; @goto _test_eof
 cs = 3; @goto _test_eof
 @label _test_eof4
 cs = 4; @goto _test_eof
+@label _test_eof7
+cs = 7; @goto _test_eof
 @label _test_eof8
 cs = 8; @goto _test_eof
+@label _test_eof9
+cs = 9; @goto _test_eof
+@label _test_eof10
+cs = 10; @goto _test_eof
+@label _test_eof11
+cs = 11; @goto _test_eof
+@label _test_eof12
+cs = 12; @goto _test_eof
 @label _test_eof5
 cs = 5; @goto _test_eof
-@label _test_eof6
-cs = 6; @goto _test_eof
 @label _test_eof
 begin
 end
 if p == eof 
 	begin
 @switch cs  begin
-    @case 8
+    @case 7
+@case 8
+@case 10
+@case 11
+begin
+	yield = true;
+        begin
+	p+= 1; cs = 0; @goto _out
+
+end
+
+    
+end
+
+	break;
+	@case 9
+@case 12
+begin
+	firstpos = Ragel.@popmark!
+        append!(input.seqbuf, state.buffer, firstpos, p)
+    
+end
 begin
 	yield = true;
         begin
@@ -624,5 +916,4 @@ end
 function done(it::FASTAIterator, state)
     return it.isdone
 end
-
 

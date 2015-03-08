@@ -627,7 +627,7 @@ facts("FASTA Parsing") do
     path = Pkg.dir("Bio", "test", "BioFmtSpecimens", "FASTA")
     for specimen in YAML.load_file(joinpath(path, "index.yml"))
         tags = specimen["tags"]
-        # currentsly unsupported features
+        # currently unsupported features
         if contains(tags, "gaps") || contains(tags, "comments") || contains(tags, "ambiguity")
             continue
         end
@@ -635,4 +635,27 @@ facts("FASTA Parsing") do
     end
 end
 
+facts("FASTQ Parsing") do
+    function check_fastq_parse(filename)
+        for seqrec in read(open(filename), FASTQ)
+        end
+        return true
+    end
+
+    path = Pkg.dir("Bio", "test", "BioFmtSpecimens", "FASTQ")
+    for specimen in YAML.load_file(joinpath(path, "index.yml"))
+        tags = get(specimen, "tags", "")
+        valid = get(specimen, "valid", true)
+        # currently unsupported features
+        if contains(tags, "rna") || contains(tags, "gaps") ||
+           contains(tags, "comments") || contains(tags, "ambiguity")
+            continue
+        end
+        if valid
+            @fact check_fastq_parse(joinpath(path, specimen["filename"])) => true
+        else
+            @fact_throws check_fastq_parse(joinpath(path, specimen["filename"]))
+        end
+    end
+end
 end # TestSeq

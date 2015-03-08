@@ -32,10 +32,10 @@ end
 
 function AminoAcidSequence(seq::Union(String, Vector{Uint8}),
                            startpos::Int, endpos::Int)
-    len = length(seq)
+    len = endpos - startpos + 1
     data = Array(AminoAcid, len)
     for (i, j) in enumerate(startpos:endpos)
-        data[i] = convert(AminoAcid, seq[j])
+        data[i] = convert(AminoAcid, convert(Char, seq[j]))
     end
 
     return AminoAcidSequence(data, 1:len)

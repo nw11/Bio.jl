@@ -116,6 +116,7 @@ function infer_alphabet(data::Vector{Uint8}, start, stop, default)
     end
 
     if count_ones(convert(Uint16, alphabets)) == 0
+        @show k
         error("String is not compatible with any known sequence type.")
     elseif alphabets & default != EMPTY_ALPHABET
         return default

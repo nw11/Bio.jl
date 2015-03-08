@@ -2,7 +2,8 @@
 module Ragel
 
 using Switch
-import Base: push!, pop!, append!, empty!, isempty, length, getindex, setindex!
+import Base: push!, pop!, endof, append!, empty!, isempty, length, getindex,
+             setindex!, (==)
 
 
 # A simple buffer type, similar to IOBuffer but faster and with fewer features.
@@ -38,7 +39,7 @@ end
 
 function getindex(buf::Buffer, i::Integer)
     if !(1 <= i < buf.pos)
-        error(BoundsError())
+        throw(BoundsError())
     end
     @inbounds x = buf.data[i]
     return x
@@ -47,7 +48,7 @@ end
 
 function setindex!{T}(buf::Buffer{T}, value::T, i::Integer)
     if !(1 <= i < buf.pos)
-        error(BoundsError())
+        throw(BoundsError())
     end
     @inbounds buf.data[i] = value
 end
@@ -69,11 +70,16 @@ end
 
 function pop!(buf::Buffer)
     if buf.pos == 1
-        error(BoundsError())
+        throw(BoundsError())
     end
     @inbounds c = buf.data[buf.pos - 1]
     buf.pos -= 1
     return c
+end
+
+
+function endof(buf::Buffer)
+    return buf.pos - 1
 end
 
 
@@ -82,6 +88,26 @@ function append!{T}(buf::Buffer{T}, source::Vector{T}, start::Int, stop::Int)
     ensureroom!(buf, n)
     unsafe_copy!(buf.data, buf.pos, source, start, n)
     buf.pos += n
+end
+
+
+function (==){T}(a::Buffer{T}, b::Buffer{T})
+    if a.pos != b.pos
+        return false
+    end
+    for i in 1:a.pos-1
+        if a.data[i] != b.data[i]
+            return false
+        end
+    end
+    return true
+end
+
+
+function Base.takebuf_string{T}(buf::Buffer{T})
+    s = bytestring(buf.data[1:buf.pos-1])
+    empty!(buf)
+    return s
 end
 
 
@@ -146,6 +172,12 @@ end
 macro popmark!()
     quote
         pop!($(esc(:state)).marks)
+    end
+end
+
+macro peekmark!()
+    quote
+        $(esc(:state)).marks[end]
     end
 end
 
@@ -292,6 +324,12 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
                     break
                 end
             end
+
+            #@show ($(p), $(pe), $(cs), $(accept_state))
+            if $(p) == $(pe) && $(cs) < $(accept_state)
+                error($("Truncated input while parsing $(machine_name)"))
+            end
+
             $(state).p = $(p)
             $(state).pe = $(pe)
             $(state).cs = $(cs)

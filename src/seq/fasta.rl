@@ -73,9 +73,10 @@ export FASTAParser
     identifier  = (any - space)+ >identifier_start %identifier_end;
     description = [^\r\n]+       >description_start %description_end;
     newline     = [\n\r];
+    hspace      = [ \t\v];
     letters     = alpha+         >letters_start %letters_end;
-    sequence    = (letters space+)*;
-    fasta_entry = '>' identifier ( [ \t\v]+ description )? newline space* sequence space*;
+    sequence    = space* letters? (newline+ space* letters (hspace+ letters)*)*;
+    fasta_entry = '>' identifier ( [ \t\v]+ description )? newline sequence space*;
 
     main := space* (fasta_entry %yield)*;
 }%%
@@ -177,5 +178,4 @@ end
 function done(it::FASTAIterator, state)
     return it.isdone
 end
-
 
