@@ -66,6 +66,10 @@ export FASTQParser
         fbreak;
     }
 
+    action count_line {
+        input.state.linenum += 1
+    }
+
     action identifier_start {
         Ragel.@pushmark!
     }
@@ -133,8 +137,10 @@ export FASTQParser
         input.qualcount += 1
     }
 
-    newline     = [\r\n];
+    newline     = '\r'? '\n'     >count_line;
     hspace      = [ \t\v];
+    whitespace  = newline | hspace;
+
     identifier  = (any - space)+     >identifier_start   %identifier_end;
     description = [^\r\n]+           >description_start  %description_end;
 
@@ -150,9 +156,9 @@ export FASTQParser
     fastq_entry = '@' when qlen_eq identifier ([ \t\v]+ description)?
                   sequence
                   newline+ '+' hspace* (identifier2 ([ \t\v]+ description2)?)?
-                  quality newline+ space*;
+                  quality newline+ whitespace*;
 
-    main := space* (fastq_entry %yield)*;
+    main := whitespace* (fastq_entry %yield)*;
 }%%
 
 

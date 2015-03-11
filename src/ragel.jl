@@ -134,22 +134,25 @@ type State
     pe::Int # index after the last symbol in the input stream (0-based)
     cs::Int # current DFA stae
 
+    # Parser is responsible for updating this
+    linenum::Int
+
     function State(cs, data::Vector{Uint8})
-        return new(nothing, data, Buffer{Int}(16), false, 0, length(data), cs)
+        return new(nothing, data, Buffer{Int}(16), false, 0, length(data), cs, 1)
     end
 
     function State(cs, input::IO)
         return new(input, Array(Uint8, RAGEL_PARSER_INITIAL_BUF_SIZE),
-                   Buffer{Int}(16), false, 0, 0, cs)
+                   Buffer{Int}(16), false, 0, 0, cs, 1)
     end
 
     function State(cs, filename::String, memory_map=false)
         if memory_map
             data = mmap_array(Uint8, (filesize(filename),), open(filename))
-            return new(nothing, data, Buffer{Int}(16), false, 0, length(data), cs)
+            return new(nothing, data, Buffer{Int}(16), false, 0, length(data), cs, 1)
         else
             return new(open(filename), Array(Uint8, RAGEL_PARSER_INITIAL_BUF_SIZE),
-                       Buffer{Int}(16), false, 0, 0, cs)
+                       Buffer{Int}(16), false, 0, 0, cs, 1)
         end
     end
 end
@@ -317,6 +320,10 @@ macro generate_read_fuction(machine_name, input_type, output_type, ragel_body, a
                 $(esc(ragel_body))
 
                 if $(cs) == $(error_state)
+                    error(string(
+                        $("Error parsing $(machine_name) input on line "),
+                        $(state).linenum))
+
                     # TODO: better error messages would be nice. E.g. keeping
                     # track of the line number at the very least.
                     error($("Error parsing $(machine_name)"))

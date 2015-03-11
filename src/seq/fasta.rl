@@ -43,6 +43,10 @@ export FASTAParser
         fbreak;
     }
 
+    action count_line {
+        input.state.linenum += 1
+    }
+
     action identifier_start {
         Ragel.@pushmark!
     }
@@ -70,15 +74,18 @@ export FASTAParser
         append!(input.seqbuf, state.buffer, firstpos, p)
     }
 
-    identifier  = (any - space)+ >identifier_start %identifier_end;
-    description = [^\r\n]+       >description_start %description_end;
-    newline     = [\n\r];
-    hspace      = [ \t\v];
-    letters     = alpha+         >letters_start %letters_end;
-    sequence    = space* letters? (newline+ space* letters (hspace+ letters)*)*;
-    fasta_entry = '>' identifier ( [ \t\v]+ description )? newline sequence space*;
 
-    main := space* (fasta_entry %yield)*;
+    newline     = '\r'? '\n'     >count_line;
+    hspace      = [ \t\v];
+    whitespace  = newline | hspace;
+
+    identifier  = (any - space)+ >identifier_start  %identifier_end;
+    description = [^\r\n]+       >description_start %description_end;
+    letters     = alpha+         >letters_start     %letters_end;
+    sequence    = whitespace* letters? (newline+ whitespace* letters (hspace+ letters)*)*;
+    fasta_entry = '>' identifier ( hspace+ description )? newline sequence whitespace*;
+
+    main := whitespace* (fasta_entry %yield)*;
 }%%
 
 
