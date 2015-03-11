@@ -43,11 +43,20 @@ type FASTAParser
     namebuf::String
     descbuf::String
 
-    function FASTAParser(input::Union(IO, String, Vector{Uint8}))
+    function FASTAParser(input::Union(IO, String, Vector{Uint8});
+                         memory_map::Bool=false)
         begin
 cs = fasta_start;
 	end
-return new(Ragel.State(cs, input), Ragel.Buffer{Uint8}(), "", "")
+if memory_map
+            if !isa(input, String)
+                error("Parser must be given a file name in order to memory map.")
+            end
+            return new(Ragel.State(cs, input, true),
+                       Ragel.Buffer{Uint8}(), "", "")
+        else
+            return new(Ragel.State(cs, input), Ragel.Buffer{Uint8}(), "", "")
+        end
     end
 end
 
@@ -1019,6 +1028,9 @@ type FASTAIterator
     nextitem
 end
 
+function Base.read(filename::String, ::Type{FASTA}, alphabet::Alphabet=DNA_ALPHABET)
+    return FASTAIterator(FASTAParser(filename), alphabet, false, nothing)
+end
 
 function Base.read(input::IO, ::Type{FASTA}, alphabet::Alphabet=DNA_ALPHABET)
     return FASTAIterator(FASTAParser(input), alphabet, false, nothing)

@@ -72,14 +72,26 @@ type FASTQParser
     default_qual_encoding::QualityEncoding
 
     function FASTQParser(input::Union(IO, String, Vector{Uint8}),
-                         default_qual_encoding=EMPTY_QUAL_ENCODING)
+                         default_qual_encoding=EMPTY_QUAL_ENCODING;
+                         memory_map::Bool=false)
         begin
 cs = fastq_start;
 	end
-return new(Ragel.State(cs, input), Ragel.Buffer{Uint8}(),
-                   Ragel.Buffer{Uint8}(), Ragel.Buffer{Uint8}(),
-                   Ragel.Buffer{Uint8}(), Ragel.Buffer{Uint8}(),
-                   Ragel.Buffer{Uint8}(), 0, default_qual_encoding)
+if memory_map
+            if !isa(input, String)
+                error("Parser must be given a file name in order to memory map.")
+            end
+            return new(Ragel.State(cs, input, true),
+                       Ragel.Buffer{Uint8}(),
+                       Ragel.Buffer{Uint8}(), Ragel.Buffer{Uint8}(),
+                       Ragel.Buffer{Uint8}(), Ragel.Buffer{Uint8}(),
+                       Ragel.Buffer{Uint8}(), 0, default_qual_encoding)
+        else
+            return new(Ragel.State(cs, input), Ragel.Buffer{Uint8}(),
+                       Ragel.Buffer{Uint8}(), Ragel.Buffer{Uint8}(),
+                       Ragel.Buffer{Uint8}(), Ragel.Buffer{Uint8}(),
+                       Ragel.Buffer{Uint8}(), 0, default_qual_encoding)
+        end
     end
 end
 
@@ -2253,6 +2265,12 @@ type FASTQIterator
     nextitem
 end
 
+function Base.read(filename::String, ::Type{FASTQ},
+                   qual_encoding::QualityEncoding=EMPTY_QUAL_ENCODING;
+                   memory_map=false)
+    return FASTQIterator(FASTQParser(filename, memory_map=memory_map),
+                         qual_encoding, false, nothing)
+end
 
 function Base.read(input::IO, ::Type{FASTQ},
                    qual_encoding::QualityEncoding=EMPTY_QUAL_ENCODING)
